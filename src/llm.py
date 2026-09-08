@@ -13,14 +13,6 @@ model = Small_LLM_Model()
 
 class States(Enum):
     START = auto()
-    PROMPT_OPEN_QUOTE = auto()
-    PROMPT = auto()
-    PROMPT_CLOSE_QUOTE = auto()
-    PROMPT_COLON = auto()
-    PROMPT_VALUE_OPEN_QUOTE = auto()
-    PROMPT_VALUE = auto()
-    PROMPT_VALUE_CLOSE_QUOTE = auto()
-    PROMPT_COMA = auto()
     KEY_OPEN_QUOTE = auto()
     NAME = auto()
     KEY_CLOSE_QUOTE = auto()
@@ -33,7 +25,6 @@ class States(Enum):
     PARAM_CLOSE_QUOTE = auto()
     PARAM_COLON = auto()
     PARAM_VALUE_OPEN_QUOTE = auto()
-
     END = auto()
 
 
@@ -58,49 +49,17 @@ def generate_tokens(prompt: str, max_tokens: int, path: str) -> str:
     raw_tensor = model.encode(context)
     token_ids: List[int] = [int(x) for x in raw_tensor.squeeze(0).tolist()]
     output_result: str = ""
-    current_state: States = States.START
+    current_state: States = States.KEY_OPEN_QUOTE
 
     available_functions: List[str] = [
         definition.name for definition in definitions]
 
     while current_state != States.END:
-        if current_state == States.START:
-            legal_pieces = ['{']
-            current_state = States.PROMPT_OPEN_QUOTE
+        # if current_state == States.START:
+        #     legal_pieces = ['{']
+        #     current_state = States.KEY_OPEN_QUOTE
 
-        elif current_state == States.PROMPT_OPEN_QUOTE:
-            legal_pieces = ['"']
-            current_state = States.PROMPT
-
-        elif current_state == States.PROMPT:
-            legal_pieces = ['prompt']
-            current_state = States.PROMPT_CLOSE_QUOTE
-
-        elif current_state == States.PROMPT_CLOSE_QUOTE:
-            legal_pieces = ['"']
-            current_state = States.PROMPT_COLON
-
-        elif current_state == States.PROMPT_COLON:
-            legal_pieces = [':']
-            current_state = States.PROMPT_VALUE_OPEN_QUOTE
-
-        elif current_state == States.PROMPT_VALUE_OPEN_QUOTE:
-            legal_pieces = ['"']
-            current_state = States.PROMPT_VALUE
-
-        elif current_state == States.PROMPT_VALUE:
-            legal_pieces = ["prompt"]
-            current_state = States.PROMPT_VALUE_CLOSE_QUOTE
-
-        elif current_state == States.PROMPT_VALUE_CLOSE_QUOTE:
-            legal_pieces = ['"']
-            current_state = States.PROMPT_COMA
-
-        elif current_state == States.PROMPT_COMA:
-            legal_pieces = [',']
-            current_state = States.KEY_OPEN_QUOTE
-
-        elif current_state == States.KEY_OPEN_QUOTE:
+        if current_state == States.KEY_OPEN_QUOTE:
             legal_pieces = ['"']
             current_state = States.NAME
 
@@ -199,8 +158,9 @@ def generate_tokens(prompt: str, max_tokens: int, path: str) -> str:
 
     return output_result
 
-
-output = generate_tokens("sum of 3 and 2", 10,
+prompt = "sum of 3 and 2"
+output = f'{{"prompt":"{prompt}",'
+output += generate_tokens(prompt, 10,
                          'data/input/functions_definition.json')
 output += '""}'
 data = json.loads(output)

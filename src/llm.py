@@ -4,6 +4,7 @@ import time
 import numpy as np
 from .parser import FunctionDefinition, load_definitions
 from enum import Enum, auto
+import json
 
 start = time.time()
 
@@ -12,6 +13,14 @@ model = Small_LLM_Model()
 
 class States(Enum):
     START = auto()
+    PROMPT_OPEN_QUOTE = auto()
+    PROMPT = auto()
+    PROMPT_CLOSE_QUOTE = auto()
+    PROMPT_COLON = auto()
+    PROMPT_VALUE_OPEN_QUOTE = auto()
+    PROMPT_VALUE = auto()
+    PROMPT_VALUE_CLOSE_QUOTE = auto()
+    PROMPT_COMA = auto()
     KEY_OPEN_QUOTE = auto()
     NAME = auto()
     KEY_CLOSE_QUOTE = auto()
@@ -22,21 +31,23 @@ class States(Enum):
     PARAM_OPEN_QUOTE = auto()
     PARAMETERS = auto()
     PARAM_CLOSE_QUOTE = auto()
+    PARAM_COLON = auto()
+    PARAM_VALUE_OPEN_QUOTE = auto()
+
     END = auto()
 
 
-def mask_logits(raw_logits, legal_token) -> List[float]:
-    masked_logits: List[float] = []
-    for i, logit in enumerate(raw_logits, 0):
-        if i not in legal_token:
-            masked_logits.append(float('-inf'))
-        else:
-            masked_logits.append(logit)
+def mask_logits(raw_logits: List[float], legal_token: List[int]) -> np.ndarray:
+    logits = np.array(raw_logits, dtype=np.float32)
 
-    return masked_logits
+    mask = np.zeros(logits.shape, dtype=bool)
+    mask[legal_token] = True
+
+    logits[~mask] = -np.inf
+    return logits
 
 
-def generate_tokens(prompt: str, max_tokens: int, path: str) -> None:
+def generate_tokens(prompt: str, max_tokens: int, path: str) -> str:
     definitions = load_definitions(path)
     context = "Available functions:\n"
     for function in definitions:
@@ -55,6 +66,38 @@ def generate_tokens(prompt: str, max_tokens: int, path: str) -> None:
     while current_state != States.END:
         if current_state == States.START:
             legal_pieces = ['{']
+            current_state = States.PROMPT_OPEN_QUOTE
+
+        elif current_state == States.PROMPT_OPEN_QUOTE:
+            legal_pieces = ['"']
+            current_state = States.PROMPT
+
+        elif current_state == States.PROMPT:
+            legal_pieces = ['prompt']
+            current_state = States.PROMPT_CLOSE_QUOTE
+
+        elif current_state == States.PROMPT_CLOSE_QUOTE:
+            legal_pieces = ['"']
+            current_state = States.PROMPT_COLON
+
+        elif current_state == States.PROMPT_COLON:
+            legal_pieces = [':']
+            current_state = States.PROMPT_VALUE_OPEN_QUOTE
+
+        elif current_state == States.PROMPT_VALUE_OPEN_QUOTE:
+            legal_pieces = ['"']
+            current_state = States.PROMPT_VALUE
+
+        elif current_state == States.PROMPT_VALUE:
+            legal_pieces = ["prompt"]
+            current_state = States.PROMPT_VALUE_CLOSE_QUOTE
+
+        elif current_state == States.PROMPT_VALUE_CLOSE_QUOTE:
+            legal_pieces = ['"']
+            current_state = States.PROMPT_COMA
+
+        elif current_state == States.PROMPT_COMA:
+            legal_pieces = [',']
             current_state = States.KEY_OPEN_QUOTE
 
         elif current_state == States.KEY_OPEN_QUOTE:
@@ -102,7 +145,7 @@ def generate_tokens(prompt: str, max_tokens: int, path: str) -> None:
 
                 raw_logits: list[float] = model.get_logits_from_input_ids(
                     token_ids)
-                masked_logits = mask_logits(raw_logits, legal_tokens)
+                masked_logits: np.ndarray = mask_logits(raw_logits, legal_tokens)
                 max_index: int = int(np.argmax(masked_logits))
                 token_ids.append(max_index)
                 output_result += model.decode([max_index])
@@ -113,14 +156,15 @@ def generate_tokens(prompt: str, max_tokens: int, path: str) -> None:
                             selected_function = name
                             print(selected_function)
                             current_state = States.COMA
-                            break
+                    break
 
                 candidates = {name: token for name,
                               token in candidates.items() if (
                                   len(token) > position and
                                   token[position] == max_index)}
                 position += 1
-                continue
+
+            continue
 
         elif current_state == States.COMA:
             legal_pieces = [',']
@@ -136,22 +180,31 @@ def generate_tokens(prompt: str, max_tokens: int, path: str) -> None:
 
         elif current_state == States.PARAM_CLOSE_QUOTE:
             legal_pieces = ['"']
+            current_state = States.PARAM_COLON
+
+        elif current_state == States.PARAM_COLON:
+            legal_pieces = [':']
             current_state = States.END
 
         for piece in legal_pieces:
             raw_token = model.encode(piece)
-            legal_tokens: List[int] = [int(x)
+            legal_tokens = [int(x)
                                        for x in raw_token.squeeze(0).tolist()]
-            raw_logits: list[float] = model.get_logits_from_input_ids(
+            raw_logits = model.get_logits_from_input_ids(
                 token_ids)
             masked_logits = mask_logits(raw_logits, legal_tokens)
-            max_index: int = int(np.argmax(masked_logits))
+            max_index = int(np.argmax(masked_logits))
             token_ids.append(max_index)
             output_result += model.decode([max_index])
 
-    print(output_result)
+    return output_result
 
 
-generate_tokens("greet simo", 10, 'data/input/functions_definition.json')
+output = generate_tokens("sum of 3 and 2", 10,
+                         'data/input/functions_definition.json')
+output += '""}'
+data = json.loads(output)
+with open('data/output/function_calls.json', 'w') as f:
+    json.dump(data, f, indent=4)
 end = time.time() - start
 print(f"{end:.2f} s")

@@ -5,6 +5,7 @@ import re
 import numpy as np
 from .parser import load_definitions, ValueSchema, FunctionDefinition
 from enum import Enum, auto
+import functools
 
 
 model = Small_LLM_Model()
@@ -18,9 +19,19 @@ vocab_ids: List[int] = list(vocab.values())
 
 
 decoded_vocab: dict[int, str] = {
-    token_id: model.decode([token_id])
-    for token_id in vocab_ids
-}
+    idx: token_str for token_str, idx in vocab.items()}
+
+VALID_NUM_CHARS = set("0123456789-.eE+")
+NUMBER_VOCAB_IDS: List[int] = []
+
+for tid in vocab_ids:
+    text = decoded_vocab[tid]
+    if not text:
+        continue
+
+    # Strip leading whitespace and check if all remaining characters are valid for math
+    if all(char in VALID_NUM_CHARS for char in text.lstrip()):
+        NUMBER_VOCAB_IDS.append(tid)
 
 
 class States(Enum):
@@ -119,30 +130,23 @@ def decode_token(token_id: int) -> str:
     return decoded_vocab[token_id]
 
 
+@functools.lru_cache(maxsize=None)
 def get_prefix_tokens(
-    current_text: str,
-    targets: List[str]
-) -> List[int]:
+        current_text: str, targets: tuple[str, ...]) -> List[int]:
     """Return vocabulary tokens that preserve one of the target prefixes."""
     legal_tokens: List[int] = []
 
     for token_id in vocab_ids:
-        token_text = decode_token(
-            token_id
-        )
+        token_text = decoded_vocab[token_id]
 
         if not token_text:
             continue
 
-        candidate = (
-            current_text + token_text
-        )
+        candidate = current_text + token_text
 
         for target in targets:
             if target.startswith(candidate):
-                legal_tokens.append(
-                    token_id
-                )
+                legal_tokens.append(token_id)
                 break
 
     return legal_tokens
@@ -160,7 +164,7 @@ def generate_fixed_text(
     while generated_text != text:
         legal_tokens = get_prefix_tokens(
             generated_text,
-            [text]
+            tuple([text])
         )
 
         if not legal_tokens:
@@ -811,7 +815,7 @@ def generate_tokens(
                 legal_tokens = (
                     get_prefix_tokens(
                         generated_name,
-                        available_functions
+                        tuple(available_functions)
                     )
                 )
 
@@ -826,7 +830,7 @@ def generate_tokens(
                     quote_tokens = (
                         get_prefix_tokens(
                             "",
-                            ['"']
+                            tuple(['"'])
                         )
                     )
 
@@ -1119,7 +1123,7 @@ def generate_tokens(
                     legal_tokens = (
                         get_prefix_tokens(
                             value_text,
-                            targets
+                            tuple(targets)
                         )
                     )
 
@@ -1176,14 +1180,14 @@ def generate_tokens(
                 comma_tokens = (
                     get_prefix_tokens(
                         "",
-                        [","]
+                        tuple([","])
                     )
                 )
 
                 brace_tokens = (
                     get_prefix_tokens(
                         "",
-                        ["}"]
+                        tuple(["}"])
                     )
                 )
 
@@ -1195,12 +1199,8 @@ def generate_tokens(
                 while True:
                     legal_tokens = []
 
-                    for token_id in vocab_ids:
-                        token_text = (
-                            decode_token(
-                                token_id
-                            )
-                        )
+                    for token_id in NUMBER_VOCAB_IDS:
+                        token_text = decode_token(token_id)
 
                         if not token_text:
                             continue
@@ -1215,17 +1215,6 @@ def generate_tokens(
                                 candidate
                                 .lstrip()
                             )
-
-                        if any(
-                            char
-                            not in (
-                                "0123456789"
-                                "-.eE+"
-                            )
-                            for char
-                            in candidate
-                        ):
-                            continue
 
                         if (
                             param[1].type

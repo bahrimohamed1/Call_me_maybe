@@ -12,6 +12,8 @@ DEFAULT_OUTPUT_FILE = "data/output/function_calls.json"
 
 
 def main() -> None:
+    import time
+    start = time.time()
     """Run function calling generation for every input prompt."""
     parser = argparse.ArgumentParser()
 
@@ -62,7 +64,8 @@ def main() -> None:
 
     with output_path.open("w", encoding="utf-8") as file:
         json.dump(results, file, indent=2, ensure_ascii=False)
-
+    end = time.time() - start
+    print(f"{end/60:.2f} min")
 
 if __name__ == "__main__":
     main()

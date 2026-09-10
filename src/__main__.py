@@ -2,7 +2,6 @@ import argparse
 import json
 from pathlib import Path
 from typing import List, Dict, Any
-import time  # remove
 from .llm import generate_tokens
 from .parser import FunctionCallingTest, load_calling_tests, load_definitions
 
@@ -13,7 +12,6 @@ DEFAULT_OUTPUT_FILE = "data/output/function_calls.json"
 
 
 def main() -> None:
-    start = time.time()
     """Run function calling generation for every input prompt."""
     parser = argparse.ArgumentParser()
 
@@ -64,8 +62,6 @@ def main() -> None:
 
     with output_path.open("w", encoding="utf-8") as file:
         json.dump(results, file, indent=2, ensure_ascii=False)
-    end = time.time() - start
-    print(f"{end/60:.2f} min")
 
 
 if __name__ == "__main__":

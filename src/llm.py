@@ -24,6 +24,7 @@ decoded_vocab: dict[int, str] = {
 
 
 class States(Enum):
+    """Represent the states used by the constrained decoding state machine."""
     START = auto()
     KEY_OPEN_QUOTE = auto()
     NAME = auto()
@@ -48,10 +49,53 @@ class States(Enum):
     END = auto()
 
 
+def show_xray(
+    raw_logits: List[float],
+    legal_tokens: List[int],
+    top_k: int = 3,
+) -> None:
+    """Display a compact view of logit masking."""
+    raw = np.asarray(raw_logits).reshape(-1)
+
+    raw_top = np.argsort(raw)[-top_k:][::-1]
+
+    legal_top = sorted(
+        legal_tokens,
+        key=lambda token_id: raw[token_id],
+        reverse=True,
+    )[:top_k]
+
+    yellow = "\033[33m"
+    green = "\033[32m"
+    cyan = "\033[36m"
+    reset = "\033[0m"
+
+    print(f"\n{cyan}[X-RAY]{reset}")
+
+    print(
+        f"{yellow}RAW   :{reset}",
+        " | ".join(
+            f"{decode_token(int(token_id))!r} "
+            f"({raw[token_id]:.2f})"
+            for token_id in raw_top
+        ),
+    )
+
+    print(
+        f"{green}LEGAL :{reset}",
+        " | ".join(
+            f"{decode_token(token_id)!r} "
+            f"({raw[token_id]:.2f})"
+            for token_id in legal_top
+        ),
+    )
+
+
 def mask_logits(
     raw_logits: List[float],
     legal_tokens: List[int]
 ) -> np.ndarray:
+    """Mask illegal token logits by setting them to negative infinity."""
     logits = np.array(
         raw_logits,
         dtype=np.float32
@@ -65,10 +109,13 @@ def mask_logits(
     mask[legal_tokens] = True
     logits[~mask] = -np.inf
 
+    show_xray(raw_logits, legal_tokens)
+
     return logits
 
 
 def decode_token(token_id: int) -> str:
+    """Return the decoded text associated with a token identifier."""
     return decoded_vocab[token_id]
 
 
@@ -76,6 +123,7 @@ def get_prefix_tokens(
     current_text: str,
     targets: List[str]
 ) -> List[int]:
+    """Return vocabulary tokens that preserve one of the target prefixes."""
     legal_tokens: List[int] = []
 
     for token_id in vocab_ids:
@@ -106,6 +154,7 @@ def generate_fixed_text(
     output_result: str,
     generated_count: List[int]
 ) -> str:
+    """Generate an exact fixed string using constrained token selection."""
     generated_text = ""
 
     while generated_text != text:
@@ -153,6 +202,7 @@ def generate_fixed_text(
 def is_complete_json_number(
     text: str
 ) -> bool:
+    """Return whether text is a complete valid JSON number."""
     pattern = (
         r"-?(0|[1-9]\d*)"
         r"(\.\d+)?"
@@ -171,6 +221,7 @@ def is_complete_json_number(
 def is_valid_json_number_prefix(
     text: str
 ) -> bool:
+    """Return whether text can still become a valid JSON number."""
     if text == "":
         return True
 
@@ -261,6 +312,7 @@ def is_valid_json_number_prefix(
 def is_safe_string_content(
     text: str
 ) -> bool:
+    """Return whether text can safely appear inside a JSON string."""
     if not text:
         return False
 
@@ -279,6 +331,7 @@ def is_safe_string_content(
 
 def classify_string_tokens(
 ) -> tuple[List[int], List[int]]:
+    """Classify vocabulary tokens as string continuation or closing tokens."""
     continue_tokens: List[int] = []
     close_tokens: List[int] = []
 
@@ -340,6 +393,7 @@ def constrained_log_probabilities(
     raw_logits: List[float],
     legal_tokens: List[int]
 ) -> dict[int, float]:
+    """Compute log probabilities restricted to the supplied legal tokens."""
     values = np.array(
         [
             raw_logits[token_id]
@@ -385,6 +439,7 @@ def top_token_ids(
     allowed_tokens: List[int],
     count: int
 ) -> List[int]:
+    """Return the highest-scoring token identifiers from the allowed set."""
     if not allowed_tokens:
         return []
 
@@ -402,6 +457,7 @@ def generate_string_value(
     beam_width: int = 2,
     max_steps: int = 32
 ) -> tuple[List[int], str]:
+    """Generate a constrained JSON string value using a small beam search."""
     base_token_ids = list(
         token_ids
     )
@@ -566,6 +622,7 @@ def generate_tokens(
     prompt: str,
     path: str
 ) -> str:
+    """Generate one schema-constrained function call for a user prompt."""
     params: list[
         tuple[str, ValueSchema]
     ] = []

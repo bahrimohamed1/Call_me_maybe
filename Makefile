@@ -6,8 +6,11 @@ install:
 run:
 	@uv run python3 -m src
 
+debug:
+	uv run python3 -m pdb -m src
+
 lint:
-	flake8 src
+	flake8 .
 	mypy . --warn-return-any \
 		--warn-unused-ignores \
 		--ignore-missing-imports \

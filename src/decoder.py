@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, cast
 
 import numpy as np
-from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
+from pydantic import BaseModel, ConfigDict, TypeAdapter
 
 from src.grammar import ScalarGrammar
 from src.schema import FunctionDefinition, Result, normalize_numbers, read_json
@@ -46,8 +46,8 @@ class Decoder(BaseModel):
     """Mask invalid logits and greedily generate schema-valid scalar values."""
 
     model_config = ConfigDict(extra="forbid", strict=True)
-    sdk: Any = Field(repr=False, exclude=True)
-    vocabulary: dict[int, bytes] = Field(repr=False)
+    sdk: Any
+    vocabulary: dict[int, bytes]
     visualize: bool = False
     generated_tokens: int = 0
 

@@ -1,0 +1,41 @@
+[
+  {
+    "prompt": "Send the message \"Server down\" urgently."
+  },
+  {
+    "prompt": "Send \"All clear\" as a non-urgent message."
+  },
+  {
+    "prompt": "Set an alarm for 06:45."
+  },
+  {
+    "prompt": "Set an alarm for 23:05."
+  },
+  {
+    "prompt": "Concatenate an empty string with \"world\"."
+  },
+  {
+    "prompt": "Join \"caf\u00e9\" and \"\u6771\u4eac\ud83d\ude00\"."
+  },
+  {
+    "prompt": "Concatenate the string a\"b with the string c\\d, preserving the quote and backslash."
+  },
+  {
+    "prompt": "Multiply -12.5 by 4."
+  },
+  {
+    "prompt": "Multiply 1000000000000 by 0.00025."
+  },
+  {
+    "prompt": "What time is it now?"
+  },
+  {
+    "prompt": "Reset the option to null."
+  },
+  {
+    "prompt": "Please help me with something."
+  },
+  {
+    "prompt": ""
+  }
+]

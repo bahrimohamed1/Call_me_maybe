@@ -1,0 +1,82 @@
+[
+  {
+    "name": "dispatch_notice",
+    "description": "Send the supplied message with an urgent flag.",
+    "parameters": {
+      "message": {
+        "type": "string"
+      },
+      "urgent": {
+        "type": "boolean"
+      }
+    },
+    "returns": {
+      "type": "boolean"
+    }
+  },
+  {
+    "name": "schedule_alarm",
+    "description": "Set an alarm at the specified hour and minute using a 24-hour clock.",
+    "parameters": {
+      "hour": {
+        "type": "integer"
+      },
+      "minute": {
+        "type": "integer"
+      }
+    },
+    "returns": {
+      "type": "boolean"
+    }
+  },
+  {
+    "name": "join_text",
+    "description": "Concatenate the left and right strings without modifying either string.",
+    "parameters": {
+      "left": {
+        "type": "string"
+      },
+      "right": {
+        "type": "string"
+      }
+    },
+    "returns": {
+      "type": "string"
+    }
+  },
+  {
+    "name": "multiply_values",
+    "description": "Multiply two numeric values.",
+    "parameters": {
+      "x": {
+        "type": "number"
+      },
+      "y": {
+        "type": "number"
+      }
+    },
+    "returns": {
+      "type": "number"
+    }
+  },
+  {
+    "name": "clock_now",
+    "description": "Return the current time.",
+    "parameters": {},
+    "returns": {
+      "type": "string"
+    }
+  },
+  {
+    "name": "reset_option",
+    "description": "Reset an option by passing null as its value.",
+    "parameters": {
+      "value": {
+        "type": "null"
+      }
+    },
+    "returns": {
+      "type": "null"
+    }
+  }
+]

@@ -1,0 +1,86 @@
+[
+  {
+    "prompt": "Send the message \"Server down\" urgently.",
+    "name": "dispatch_notice",
+    "parameters": {
+      "message": "Server down",
+      "urgent": true
+    }
+  },
+  {
+    "prompt": "Send \"All clear\" as a non-urgent message.",
+    "name": "dispatch_notice",
+    "parameters": {
+      "message": "All clear",
+      "urgent": false
+    }
+  },
+  {
+    "prompt": "Set an alarm for 06:45.",
+    "name": "schedule_alarm",
+    "parameters": {
+      "hour": 6,
+      "minute": 45
+    }
+  },
+  {
+    "prompt": "Set an alarm for 23:05.",
+    "name": "schedule_alarm",
+    "parameters": {
+      "hour": 23,
+      "minute": 5
+    }
+  },
+  {
+    "prompt": "Concatenate an empty string with \"world\".",
+    "name": "join_text",
+    "parameters": {
+      "left": "",
+      "right": "world"
+    }
+  },
+  {
+    "prompt": "Join \"caf\u00e9\" and \"\u6771\u4eac\ud83d\ude00\".",
+    "name": "join_text",
+    "parameters": {
+      "left": "caf\u00e9",
+      "right": "\u6771\u4eac\ud83d\ude00"
+    }
+  },
+  {
+    "prompt": "Concatenate the string a\"b with the string c\\d, preserving the quote and backslash.",
+    "name": "join_text",
+    "parameters": {
+      "left": "a\"b",
+      "right": "c\\d"
+    }
+  },
+  {
+    "prompt": "Multiply -12.5 by 4.",
+    "name": "multiply_values",
+    "parameters": {
+      "x": -12.5,
+      "y": 4
+    }
+  },
+  {
+    "prompt": "Multiply 1000000000000 by 0.00025.",
+    "name": "multiply_values",
+    "parameters": {
+      "x": 1000000000000,
+      "y": 0.00025
+    }
+  },
+  {
+    "prompt": "What time is it now?",
+    "name": "clock_now",
+    "parameters": {}
+  },
+  {
+    "prompt": "Reset the option to null.",
+    "name": "reset_option",
+    "parameters": {
+      "value": null
+    }
+  }
+]

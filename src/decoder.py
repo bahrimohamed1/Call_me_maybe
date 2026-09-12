@@ -140,8 +140,8 @@ class Decoder(BaseModel):
     ) -> Result:
         """Choose a function, constrain arguments, and validate the call."""
         definitions = json.dumps(
-            [item.model_dump(exclude_defaults=True) for item in functions],
-            ensure_ascii=True, separators=(",", ":"),
+            [item.model_dump() for item in functions],
+            separators=(",", ":"),
         )
         instruction = (
             "Select the function fulfilling the user's request. Extract its "

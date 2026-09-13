@@ -67,7 +67,6 @@ def run(arguments: argparse.Namespace) -> None:
         from llm_sdk import Small_LLM_Model
         from src.decoder import Decoder, vocabulary_bytes
 
-        print("Loading Qwen/Qwen3-0.6B...", file=sys.stderr)
         sdk = Small_LLM_Model(model_name="Qwen/Qwen3-0.6B")
         decoder = Decoder(
             sdk=sdk,

@@ -3,7 +3,7 @@
 import json
 import sys
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, cast, List, Dict
 
 import numpy as np
 from pydantic import BaseModel, ConfigDict, TypeAdapter
@@ -12,7 +12,7 @@ from src.grammar import ScalarGrammar
 from src.schema import FunctionDefinition, Result, normalize_numbers, read_json
 
 
-def vocabulary_bytes(path: Path) -> dict[int, bytes]:
+def vocabulary_bytes(path: Path) -> Dict[int, bytes]:
     """Interpret Qwen's byte-level BPE vocabulary; tokenization stays in SDK.
 
     The vocabulary encodes each byte as a printable Unicode character. Undo
@@ -28,8 +28,8 @@ def vocabulary_bytes(path: Path) -> dict[int, bytes]:
             characters.append(256 + extra)
             extra += 1
     byte_map = {chr(char): byte for char, byte in zip(characters, visible)}
-    raw = TypeAdapter(dict[str, int]).validate_python(read_json(path))
-    vocabulary: dict[int, bytes] = {}
+    raw = TypeAdapter(Dict[str, int]).validate_python(read_json(path))
+    vocabulary: Dict[int, bytes] = {}
     for text, token_id in raw.items():
         if text and not text.startswith("<|"):
             try:
@@ -47,13 +47,13 @@ class Decoder(BaseModel):
 
     model_config = ConfigDict(extra="forbid", strict=True)
     sdk: Any
-    vocabulary: dict[int, bytes]
+    vocabulary: Dict[int, bytes]
     visualize: bool = False
     generated_tokens: int = 0
 
-    def encode(self, text: str) -> list[int]:
+    def encode(self, text: str) -> List[int]:
         """Convert the public encode result into the SDK's input ID list."""
-        rows = TypeAdapter(list[list[int]]).validate_python(
+        rows = TypeAdapter(List[List[int]]).validate_python(
             self.sdk.encode(text).tolist(), strict=True,
         )
         if len(rows) != 1:
@@ -61,7 +61,7 @@ class Decoder(BaseModel):
         return rows[0]
 
     def select(
-        self, context: list[int], allowed: list[int], label: str,
+        self, context: List[int], allowed: List[int], label: str,
     ) -> int:
         """Set invalid logits to negative infinity before greedy selection."""
         if len(context) > 8192:
@@ -92,7 +92,7 @@ class Decoder(BaseModel):
         return token_id
 
     def choose_function(
-        self, context: list[int], functions: list[FunctionDefinition],
+        self, context: List[int], functions: List[FunctionDefinition],
     ) -> FunctionDefinition:
         """Choose among supplied names using constrained LLM token scores."""
         candidates = [
@@ -117,13 +117,13 @@ class Decoder(BaseModel):
         raise ValueError("No function name matches the constrained tokens.")
 
     def value(
-        self, context: list[int], grammar: ScalarGrammar, label: str,
+        self, context: List[int], grammar: ScalarGrammar, label: str,
     ) -> bytes:
         """Generate one scalar plus delimiter, rejecting unfinished values."""
         state = "start"
         output = bytearray()
         for _ in range(256):
-            transitions: dict[int, str] = {}
+            transitions: Dict[int, str] = {}
             for token_id, fragment in self.vocabulary.items():
                 next_state = grammar.advance(state, fragment)
                 if next_state is not None:
@@ -136,7 +136,7 @@ class Decoder(BaseModel):
         raise ValueError(f"Generation limit reached for argument {label!r}.")
 
     def generate(
-        self, prompt: str, functions: list[FunctionDefinition],
+        self, prompt: str, functions: List[FunctionDefinition],
     ) -> Result:
         """Choose a function, constrain arguments, and validate the call."""
         definitions = json.dumps(
@@ -176,7 +176,7 @@ class Decoder(BaseModel):
             parameters.extend(self.value(context, grammar, name))
         if not items:
             parameters.extend(b"}")
-        arguments = cast(dict[str, Any], json.loads(parameters))
+        arguments = cast(Dict[str, Any], json.loads(parameters))
         result = Result(
             prompt=prompt, name=function.name, parameters=arguments,
         )
